@@ -38,20 +38,49 @@ class VClock(object):
         else:
             self.vector = list(vector)
 
-    def increment(self, id):
+    def increment(self, idx):
+        """
+        Extend vector if needed for this id.
+        Increment count by one for this slot.
+        """
+        # extend vector if needed
+        extend = idx - len(self.vector) + 1
+        if extend > 0:
+            self.vector += [0] * extend
+        # now increment index
+        self.vector[idx] += 1
         return self
 
     def merge(self, clock):
         return self
 
     def concurrent(self, clock):
-        return True
+        return not (self.before(clock) or self.after(clock))
 
     def before(self, clock):
-        return False
+        """
+        self must not have any actors that are not in clock.
+        all actors that are in both must have an equal or lower count in self.
+        they must not be equal.
+        """
+        return clock.after(self)
 
     def after(self, clock):
-        return False
+        """
+        clock must not have any actors that are not in self.
+        all actors that are in both must have an equal or lower count in clock.
+        they must not be equal.
+        """
+        v1 = clock.vector
+        v2 = self.vector
+        if len(v1) > len(v2):
+            return False
+        if v1 == v2:
+            return False
+        for first, second in zip(v1, v2):
+            if first > second:
+                return False
+        return True
 
     def serialize(self):
         return 'VCLOCK'
@@ -67,7 +96,7 @@ class VClock(object):
         return self.after(clock)
 
     def __lt__(self, clock):
-        return self.before(clock)
+        return clock.after(self)
 
     def __eq__(self, clock):
         return self.vector == clock.vector
