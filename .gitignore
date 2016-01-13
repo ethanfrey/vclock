@@ -1,4 +1,5 @@
 *.py[oc]
+.cache
 
 ## Packages
 *.egg
