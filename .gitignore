@@ -1,0 +1,11 @@
+*.py[oc]
+
+## Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+sdist
+
+*.sublime-*
