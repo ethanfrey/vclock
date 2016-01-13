@@ -20,6 +20,8 @@ class VClock(object):
     * serialize() - Return an ASCII representation of this clock
     * deserialize(bin) - Re-create a clock from an ASCII string
 
+    *The VClock object is immutable, all modifying methods return a new object*
+
     Note that the < and > operations work for the serialized strings as well.
     However, the string representation of concurrent clocks may be before
     or after one another. (This relaxes the iff in before/after above to
@@ -38,24 +40,33 @@ class VClock(object):
         else:
             self.vector = list(vector)
 
+    def _extend(self, size):
+        """
+        Return a copy of this vector with at least the given size.
+        """
+        result = self.vector
+        extend = size - len(self.vector) + 1
+        if extend > 0:
+            result += [0] * extend
+        return result
+
     def increment(self, idx):
         """
-        Extend vector if needed for this id.
         Increment count by one for this slot.
+        Extend vector if needed for this id.
         """
         # extend vector if needed
-        extend = idx - len(self.vector) + 1
-        if extend > 0:
-            self.vector += [0] * extend
+        result = VClock(self._extend(idx + 1))
         # now increment index
-        self.vector[idx] += 1
-        return self
+        result.vector[idx] += 1
+        return result
 
     def merge(self, clock):
-        return self
+        # TODO
+        return VClock(self.vector)
 
     def concurrent(self, clock):
-        return not (self.before(clock) or self.after(clock))
+        return not (clock.after(self) or self.after(clock))
 
     def before(self, clock):
         """
@@ -86,11 +97,8 @@ class VClock(object):
         return 'VCLOCK'
 
     @classmethod
-    def deserialize(string):
-        return VClock()
-
-    def copy(self):
-        return VClock(self.vector)
+    def deserialize(cls, string):
+        return cls()
 
     def __gt__(self, clock):
         return self.after(clock)

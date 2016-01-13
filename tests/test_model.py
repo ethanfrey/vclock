@@ -12,19 +12,24 @@ def _assert_order(a, b):
 
 def test_basic_increment():
     one = VClock()
-    two = one.copy()
-    assert isinstance(two, VClock)
-    assert one == two
-    two.increment(1)
+    two = one.increment(1)
+    assert two != one
     _assert_order(one, two)
 
 
 def test_multiple_increments():
     start = VClock()
-    one = start.copy()
-    one.increment(1).increment(3)
-    two = one.copy()
-    assert one == two
-    two.increment(2).increment(0)
+    one = start.increment(1).increment(3)
+    two = one.increment(2).increment(0)
     _assert_order(one, two)
 
+
+def test_concurrent_increments():
+    one = VClock([1, 0, 1])
+    two = one.increment(4)
+    three = one.increment(2)
+    assert two > one
+    assert three > one
+    assert not three > two
+    assert not two > three
+    assert three.concurrent(two)
