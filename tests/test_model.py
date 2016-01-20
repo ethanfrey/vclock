@@ -15,6 +15,8 @@ def test_basic_increment():
     two = one.increment(1)
     assert two != one
     _assert_order(one, two)
+    # should have two places [0, 1]
+    assert len(two.vector) == 2
 
 
 def test_multiple_increments():
@@ -22,6 +24,9 @@ def test_multiple_increments():
     one = start.increment(1).increment(3)
     two = one.increment(2).increment(0)
     _assert_order(one, two)
+    # should have four places [0, 1, 0, 1]
+    assert len(one.vector) == 4
+    assert len(two.vector) == 4
 
 
 def test_concurrent_increments():

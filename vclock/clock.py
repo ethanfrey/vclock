@@ -45,7 +45,7 @@ class VClock(object):
         Return a copy of this vector with at least the given size.
         """
         result = self.vector
-        extend = size - len(self.vector) + 1
+        extend = size - len(self.vector)
         if extend > 0:
             result += [0] * extend
         return result
@@ -93,12 +93,23 @@ class VClock(object):
                 return False
         return True
 
-    def serialize(self):
-        return 'VCLOCK'
+    def _encode(self, val):
+        # now, 4 character in decimal
+        return '{:04}'.format(val)
 
     @classmethod
-    def deserialize(cls, string):
-        return cls()
+    def _decode(cls, val):
+        # parse string as decimal
+        return int(val, 10)
+
+    def serialize(self):
+        return ''.join(self._encode(x) for x in self.vector)
+
+    @classmethod
+    def deserialize(cls, line):
+        n = cls.DIGITS
+        vector = (cls._decode(line[i:i+n]) for i in range(0, len(line), n))
+        return cls(vector)
 
     def __gt__(self, clock):
         return self.after(clock)
@@ -110,4 +121,7 @@ class VClock(object):
         return self.vector == clock.vector
 
     def __str__(self):
+        return '<VClock: {}>'.format(self.vector)
+
+    def __repr__(self):
         return '<VClock: {}>'.format(self.vector)
