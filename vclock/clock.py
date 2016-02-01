@@ -1,3 +1,12 @@
+# TODO: py2/3 compatability with builtins, __future__
+# http://python-future.org/quickstart.html
+# from builtins import map
+try:
+    from itertools import zip_longest
+except ImportError:
+    from itertools import izip_longest as zip_longest
+
+
 class VClock(object):
     """
     This is a basic model of a vector clock, that is also able to
@@ -66,7 +75,12 @@ class VClock(object):
         This merges together two vector clocks.
         idx is the index of the actor performing the merge
         """
-        return self.increment(idx)
+        # first, make an array with the max values for all elements from self and clock
+        combined = map(max, (zip_longest(self.vector, clock.vector, fillvalue=0)))
+        # then increment my local clock by one for this action
+        combined[idx] += 1
+        # and now wrap up the solution to return it safely
+        return VClock(combined)
 
     def concurrent(self, clock):
         return not (clock.after(self) or self.after(clock))
