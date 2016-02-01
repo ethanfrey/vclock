@@ -61,9 +61,12 @@ class VClock(object):
         result.vector[idx] += 1
         return result
 
-    def merge(self, clock):
-        # TODO
-        return VClock(self.vector)
+    def merge(self, clock, idx):
+        """
+        This merges together two vector clocks.
+        idx is the index of the actor performing the merge
+        """
+        return self.increment(idx)
 
     def concurrent(self, clock):
         return not (clock.after(self) or self.after(clock))
