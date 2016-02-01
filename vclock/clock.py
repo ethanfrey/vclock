@@ -139,11 +139,13 @@ class VClockDict(VClockArray):
     This means, for sparse sets (only a small percentage of actors touch any given object), this is much more
     efficient for storage and encoding.
     """
-    code = DictCodec()
+    codec = DictCodec()
 
     def __init__(self, vector=None):
         if vector is None:
             self.vector = {}
+        elif isinstance(vector, list):
+            self.vector = { key: val for key, val in enumerate(vector) }
         else:
             self.vector = dict(vector)
 
