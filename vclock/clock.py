@@ -3,11 +3,12 @@ from builtins import map
 from future import standard_library
 standard_library.install_aliases()
 
-
 from itertools import zip_longest
 
+from .codec import ArrayCodec, HashCodec
 
-class VClock(object):
+
+class VClockArray(object):
     """
     This is a basic model of a vector clock, that is also able to
     serialize itself.  The serialization options are provided in
@@ -40,8 +41,7 @@ class VClock(object):
     Every actor modifying this clock needs its own unique id, generating and
     maintaining these is outside the scope of this class.
     """
-    DIGITS = 4
-    USE_HEX = True
+    codec = ArrayCodec()
 
     def __init__(self, vector=None):
         if vector is None:
@@ -110,23 +110,12 @@ class VClock(object):
                 return False
         return True
 
-    def _encode(self, val):
-        # now, 4 character in decimal
-        return '{:04}'.format(val)
-
-    @classmethod
-    def _decode(cls, val):
-        # parse string as decimal
-        return int(val, 10)
-
     def serialize(self):
-        return ''.join(self._encode(x) for x in self.vector)
+        return self.codec.encode_vector(self.vector)
 
     @classmethod
     def deserialize(cls, line):
-        n = cls.DIGITS
-        vector = (cls._decode(line[i:i+n]) for i in range(0, len(line), n))
-        return cls(vector)
+        return cls(cls.codec.decode_vector(line))
 
     def __gt__(self, clock):
         return self.after(clock)
@@ -138,7 +127,65 @@ class VClock(object):
         return self.vector == clock.vector
 
     def __str__(self):
-        return '<VClock: {}>'.format(self.vector)
+        return '<{}: {}>'.format(self.__class__.__name__, self.vector)
 
     def __repr__(self):
-        return '<VClock: {}>'.format(self.vector)
+        return '<{}: {}>'.format(self.__class__.__name__, self.vector)
+
+
+class VClockHash(VClockArray):
+    """
+    This is a more flexible form of the VClockArray, that uses hash tables instead of arrays to store the data.
+    This means, for sparse sets (only a small percentage of actors touch any given object), this is much more
+    efficient for storage and encoding.
+    """
+    code = HashCodec()
+
+    def __init__(self, vector=None):
+        if vector is None:
+            self.vector = {}
+        else:
+            self.vector = dict(vector)
+
+    def increment(self, idx):
+        """
+        Increment count by one for this slot.
+        Extend vector if needed for this id.
+        """
+        result = VClock(self.vector)
+        result.vector[idx] = result.vector.get(idx, 0) + 1
+        return result
+
+    def merge(self, clock, idx):
+        """
+        This merges together two vector clocks.
+        idx is the index of the actor performing the merge
+        TODO
+        """
+        # first, make an array with the max values for all elements from self and clock
+        combined = list(map(max, (zip_longest(self.vector, clock.vector, fillvalue=0))))
+        # then increment my local clock by one for this action
+        combined[idx] += 1
+        # and now wrap up the solution to return it safely
+
+    def after(self, clock):
+        """
+        TODO
+        clock must not have any actors that are not in self.
+        all actors that are in both must have an equal or lower count in clock.
+        they must not be equal.
+        """
+        v1 = clock.vector
+        v2 = self.vector
+        if len(v1) > len(v2):
+            return False
+        if v1 == v2:
+            return False
+        for first, second in zip(v1, v2):
+            if first > second:
+                return False
+        return True
+
+
+# set the default implementation
+VClock = VClockArray

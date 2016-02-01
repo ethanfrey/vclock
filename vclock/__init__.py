@@ -1,1 +1,1 @@
-from .clock import *
+from .clock import VClockArray, VClock
