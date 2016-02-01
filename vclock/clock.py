@@ -1,10 +1,10 @@
-# TODO: py2/3 compatability with builtins, __future__
-# http://python-future.org/quickstart.html
-# from builtins import map
-try:
-    from itertools import zip_longest
-except ImportError:
-    from itertools import izip_longest as zip_longest
+# for consistency, use Py3 definition that returns an iterator, not a list
+from builtins import map
+from future import standard_library
+standard_library.install_aliases()
+
+
+from itertools import zip_longest
 
 
 class VClock(object):
@@ -76,7 +76,7 @@ class VClock(object):
         idx is the index of the actor performing the merge
         """
         # first, make an array with the max values for all elements from self and clock
-        combined = map(max, (zip_longest(self.vector, clock.vector, fillvalue=0)))
+        combined = list(map(max, (zip_longest(self.vector, clock.vector, fillvalue=0))))
         # then increment my local clock by one for this action
         combined[idx] += 1
         # and now wrap up the solution to return it safely
