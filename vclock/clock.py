@@ -5,7 +5,7 @@ standard_library.install_aliases()
 
 from itertools import zip_longest
 
-from .codec import ArrayCodec, HashCodec
+from .codec import ArrayCodec, DictCodec
 
 
 class VClockArray(object):
@@ -80,7 +80,7 @@ class VClockArray(object):
         # then increment my local clock by one for this action
         combined[idx] += 1
         # and now wrap up the solution to return it safely
-        return VClock(combined)
+        return self.__class__(combined)
 
     def concurrent(self, clock):
         return not (clock.after(self) or self.after(clock))
@@ -133,13 +133,13 @@ class VClockArray(object):
         return '<{}: {}>'.format(self.__class__.__name__, self.vector)
 
 
-class VClockHash(VClockArray):
+class VClockDict(VClockArray):
     """
     This is a more flexible form of the VClockArray, that uses hash tables instead of arrays to store the data.
     This means, for sparse sets (only a small percentage of actors touch any given object), this is much more
     efficient for storage and encoding.
     """
-    code = HashCodec()
+    code = DictCodec()
 
     def __init__(self, vector=None):
         if vector is None:
@@ -160,32 +160,34 @@ class VClockHash(VClockArray):
         """
         This merges together two vector clocks.
         idx is the index of the actor performing the merge
-        TODO
         """
-        # first, make an array with the max values for all elements from self and clock
-        combined = list(map(max, (zip_longest(self.vector, clock.vector, fillvalue=0))))
+        combined = dict()
+        a, b = self.vector, clock.vector
+        # first, make a dict with the max values for all elements from self and clock
+        for key in set(a.keys()).union(b.keys()):
+            combined[key] = max(a.get(key, 0), b.get(key, 0))
         # then increment my local clock by one for this action
         combined[idx] += 1
         # and now wrap up the solution to return it safely
+        return self.__class__(combined)
 
     def after(self, clock):
         """
-        TODO
         clock must not have any actors that are not in self.
         all actors that are in both must have an equal or lower count in clock.
         they must not be equal.
         """
-        v1 = clock.vector
-        v2 = self.vector
-        if len(v1) > len(v2):
+        a, b = self.vector, clock.vector
+        missing = set(b.keys()).difference(a.keys())
+        if missing:
             return False
-        if v1 == v2:
+        if a == b:
             return False
-        for first, second in zip(v1, v2):
-            if first > second:
+        for key, value in a.items():
+            if b.get(key, 0) > value:
                 return False
         return True
 
 
 # set the default implementation
-VClock = VClockArray
+VClock = VClockDict

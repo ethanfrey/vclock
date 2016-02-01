@@ -33,7 +33,7 @@ class ArrayCodec(object):
         return (self.decode_count(line[i:i+n]) for i in range(0, len(line), n))
 
 
-class HashCodec(ArrayCodec):
+class DictCodec(ArrayCodec):
     """
     This is a more flexible codec than ArrayCodec, designed to handle a vector that consists
     of key-value pairs (int -> int). It will be somewhat larger when most actors participate,
