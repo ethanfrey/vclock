@@ -41,12 +41,25 @@ class DictCodec(ArrayCodec):
     """
     COUNT_BYTES = 6
 
+    def __init__(self, int_keys=True):
+        self.int_keys = int_keys
+
     def encode_key(self, small):
         """This encodes a number from 0 - 255 into two ascii characters"""
-        return "{:02X}".format(small).upper()
+        if self.int_keys:
+            return b"{:02X}".format(small).upper()
+        elif hasattr(small, 'encode'):
+            return small.encode('utf-8')
+        else:
+            return small
 
     def decode_key(self, ascii):
-        return int(ascii, 16)
+        if self.int_keys:
+            return int(ascii, 16)
+        elif hasattr(ascii, 'decode'):
+            return ascii.decode('utf-8')
+        else:
+            return ascii
 
     def encode_vector(self, vector):
         """Encodes a vector array as a string"""

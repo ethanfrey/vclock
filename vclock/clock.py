@@ -65,7 +65,7 @@ class VClockArray(object):
         Extend vector if needed for this id.
         """
         # extend vector if needed
-        result = VClock(self._extend(idx + 1))
+        result = self.__class__(self._extend(idx + 1))
         # now increment index
         result.vector[idx] += 1
         return result
@@ -133,13 +133,13 @@ class VClockArray(object):
         return '<{}: {}>'.format(self.__class__.__name__, self.vector)
 
 
-class VClockDict(VClockArray):
+class VClockDictInt(VClockArray):
     """
     This is a more flexible form of the VClockArray, that uses hash tables instead of arrays to store the data.
     This means, for sparse sets (only a small percentage of actors touch any given object), this is much more
     efficient for storage and encoding.
     """
-    codec = DictCodec()
+    codec = DictCodec(int_keys=True)
 
     def __init__(self, vector=None):
         if vector is None:
@@ -154,7 +154,7 @@ class VClockDict(VClockArray):
         Increment count by one for this slot.
         Extend vector if needed for this id.
         """
-        result = VClock(self.vector)
+        result = self.__class__(self.vector)
         result.vector[idx] = result.vector.get(idx, 0) + 1
         return result
 
@@ -189,6 +189,10 @@ class VClockDict(VClockArray):
             if b.get(key, 0) > value:
                 return False
         return True
+
+
+class VClockDict(VClockDictInt):
+    codec = DictCodec(int_keys=False)
 
 
 # set the default implementation

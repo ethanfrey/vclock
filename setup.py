@@ -23,5 +23,8 @@ setup(
     install_requires=[
         'future>=0.15.0'
     ],
+    tests_require=[
+        'pytest>=2.7.1',
+    ]
 )
 

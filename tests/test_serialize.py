@@ -1,6 +1,7 @@
 from __future__ import print_function
 
-from vclock import VClock
+from pytest import mark
+from vclock import VClockArray, VClockDict, VClockDictInt
 
 
 def _assert_serialization_order_valid(events):
@@ -19,17 +20,27 @@ def _assert_serialization_order_valid(events):
             assert event.before(later) or event.concurrent(later)
 
 
-def test_serialize_deserialize():
-    orig = VClock([3, 4, 1])
+@mark.parametrize("cls,init", [
+    (VClockArray, [3, 4, 1]),
+    (VClockDictInt, {0: 3, 1: 4, 2: 1}),
+    (VClockDict, {'aa': 3, 'ab': 4, 'ac': 1})
+    ])
+def test_serialize_deserialize(cls, init):
+    orig = cls(init)
     store = orig.serialize()
     assert store
-    loaded = VClock.deserialize(store)
+    loaded = cls.deserialize(store)
     assert loaded == orig
 
 
-def test_serialization_order():
-    one = VClock([1, 0, 2])
-    two = one.increment(1)
+@mark.parametrize("cls,init,idx", [
+    (VClockArray, [3, 4, 1], 1),
+    (VClockDictInt, {0: 3, 1: 4, 2: 1}, 1),
+    (VClockDict, {'aa': 3, 'ab': 4, 'ac': 1}, 'ab')
+    ])
+def test_serialization_order(cls, init, idx):
+    one = cls(init)
+    two = one.increment(idx)
     assert two > one
     one_store = one.serialize()
     two_store = two.serialize()
@@ -38,15 +49,19 @@ def test_serialization_order():
     # all causes and effects should be clear, but no valid tests on concurrent items
 
 
-def test_serialized_merge_cause_effect():
+@mark.parametrize("cls,A,B", [
+    (VClockArray, 0, 1),
+    (VClockDictInt, 0, 1),
+    (VClockDict, 'aa', 'ab')
+    ])
+def test_serialized_merge_cause_effect(cls, A, B):
     """
     Two actions before the merge (Causes) - a1, b1
     Two actions after the merge (Effects) - a2, b2
     Make sure they are all classified properly
     """
-    A, B = 0, 1
-    a1 = VClock().increment(A)
-    b1 = VClock().increment(B)
+    a1 = cls().increment(A)
+    b1 = cls().increment(B)
     merge = a1.merge(b1, A)
     a2 = merge.increment(A)
     b2 = merge.increment(B)
@@ -58,14 +73,18 @@ def test_serialized_merge_cause_effect():
     assert b2.serialize() > merge.serialize()
 
 
-def test_serialized_three_way_merging():
+@mark.parametrize("cls,A,B,C", [
+    (VClockArray, 0, 1, 2),
+    (VClockDictInt, 0, 1, 2),
+    (VClockDict, 'aa', 'cb', 'fe')
+    ])
+def test_serialized_three_way_merging(cls, A, B, C):
     """
     Based on diagram from https://en.wikipedia.org/wiki/Vector_clock
     Let's make sure all causes, effects, and concurrency are properly classified
     """
-    A, B, C = 0, 1, 2
     # first, everyone touches this data once
-    c1 = VClock().increment(C)
+    c1 = cls().increment(C)
     b1 = c1.increment(B)
     b2 = b1.increment(B)
     a1 = b2.increment(A)
@@ -103,9 +122,10 @@ def test_serialized_three_way_merging():
     _assert_serialization_order_valid(events)
 
 
-def test_crazy_merge_with_ordering():
+@mark.parametrize("cls", [VClockArray, VClockDictInt])
+def test_crazy_merge_with_ordering(cls):
     A, B, C, D = 0, 1, 2, 3
-    a1 = VClock().increment(A)
+    a1 = cls().increment(A)
     b1 = a1.increment(B)
     b2 = b1.increment(B)
     c1 = b1.increment(C)

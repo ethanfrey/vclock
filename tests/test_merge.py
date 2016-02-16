@@ -1,6 +1,7 @@
 from __future__ import print_function
 
-from vclock import VClock
+from pytest import mark
+from vclock import VClockArray, VClockDict, VClockDictInt
 
 
 def _assert_order(a, b):
@@ -12,15 +13,19 @@ def _assert_order(a, b):
     assert a < b
 
 
-def test_merge_cause_effect():
+@mark.parametrize("cls,A,B", [
+    (VClockArray, 0, 1),
+    (VClockDictInt, 0, 1),
+    (VClockDict, 'aa', 'b7'),
+    ])
+def test_merge_cause_effect(cls, A, B):
     """
     Two actions before the merge (Causes) - a1, b1
     Two actions after the merge (Effects) - a2, b2
     Make sure they are all classified properly
     """
-    A, B = 0, 1
-    a1 = VClock().increment(A)
-    b1 = VClock().increment(B)
+    a1 = cls().increment(A)
+    b1 = cls().increment(B)
     merge = a1.merge(b1, A)
     a2 = merge.increment(A)
     b2 = merge.increment(B)
@@ -40,14 +45,18 @@ def test_merge_cause_effect():
     assert a2.concurrent(b2)
 
 
-def test_three_way_merging():
+@mark.parametrize("cls,A,B,C", [
+    (VClockArray, 0, 1, 2),
+    (VClockDictInt, 0, 1, 2),
+    (VClockDict, 'A3', 'AF', 'B1'),
+    ])
+def test_three_way_merging(cls, A, B, C):
     """
     Based on diagram from https://en.wikipedia.org/wiki/Vector_clock
     Let's make sure all causes, effects, and concurrency are properly classified
     """
-    A, B, C = 0, 1, 2
     # first, everyone touches this data once
-    c1 = VClock().increment(C)
+    c1 = cls().increment(C)
     b1 = c1.increment(B)
     b2 = b1.increment(B)
     a1 = b2.increment(A)
