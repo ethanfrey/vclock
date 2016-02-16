@@ -13,6 +13,37 @@ def _assert_order(a, b):
     assert a < b
 
 
+
+
+@mark.parametrize("cls,A,B,C", [
+    # merger is the highest key
+    (VClockArray, 0, 1, 2),
+    (VClockDictInt, 0, 1, 2),
+    (VClockDict, 'aa', 'b7', 'dd'),
+    # merger is the lowest key
+    (VClockArray, 2, 1, 0),
+    (VClockDictInt, 2, 1, 0),
+    (VClockDict, 'dd', 'b7', 'aa'),
+    ])
+def test_third_party_merge(cls, A, B, C):
+    """
+    Two actions before the merge (Causes) - a1, b1
+    Two actions after the merge (Effects) - a2, b2
+    Make sure they are all classified properly
+    """
+    start = cls()
+    a = start.increment(A)
+    b = start.increment(B)
+    merged = a.merge(b, C)
+    _assert_order(a, merged)
+    _assert_order(b, merged)
+    _assert_order(start, a)
+    _assert_order(start, b)
+    assert a.concurrent(b)
+    assert merged.serialize() > a.serialize()
+    assert merged.serialize() > b.serialize()
+
+
 @mark.parametrize("cls,A,B", [
     (VClockArray, 0, 1),
     (VClockDictInt, 0, 1),

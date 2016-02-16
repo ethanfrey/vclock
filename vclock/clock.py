@@ -56,8 +56,9 @@ class VClockArray(object):
         result = self.vector
         extend = size - len(self.vector)
         if extend > 0:
-            result += [0] * extend
-        return result
+            return result + [0] * extend
+        else:
+            return result
 
     def increment(self, idx):
         """
@@ -78,9 +79,8 @@ class VClockArray(object):
         # first, make an array with the max values for all elements from self and clock
         combined = list(map(max, (zip_longest(self.vector, clock.vector, fillvalue=0))))
         # then increment my local clock by one for this action
-        combined[idx] += 1
-        # and now wrap up the solution to return it safely
-        return self.__class__(combined)
+        tmp = self.__class__(combined)
+        return tmp.increment(idx)
 
     def concurrent(self, clock):
         return not (clock.after(self) or self.after(clock))
@@ -169,7 +169,7 @@ class VClockDictInt(VClockArray):
         for key in set(a.keys()).union(b.keys()):
             combined[key] = max(a.get(key, 0), b.get(key, 0))
         # then increment my local clock by one for this action
-        combined[idx] += 1
+        combined[idx] = combined.get(idx, 0) + 1
         # and now wrap up the solution to return it safely
         return self.__class__(combined)
 
