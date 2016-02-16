@@ -13,7 +13,8 @@ class ArrayCodec(object):
     def encode_count(self, big):
         """This encodes a large integer < 2*24 ~= 16 million, into 4 ascii characters"""
         binary = struct.pack(">I", big)
-        assert binary[0] == b'\x00'
+        # py2 - returns b'\x00', py3 - returns 0
+        assert binary[0] in (b'\x00', 0)
         binary = binary[1:]
         return b64encode(binary)
 
@@ -47,7 +48,7 @@ class DictCodec(ArrayCodec):
     def encode_key(self, small):
         """This encodes a number from 0 - 255 into two ascii characters"""
         if self.int_keys:
-            return b"{:02X}".format(small).upper()
+            return u"{:02X}".format(small).upper().encode('utf-8')
         elif hasattr(small, 'encode'):
             return small.encode('utf-8')
         else:
