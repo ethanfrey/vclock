@@ -20,12 +20,13 @@ class ArrayCodec(object):
             mod = big % self.BASE
             result = self.DIGITS[mod] + result
             big = big // self.BASE
-        return result
+        return result.encode('utf-8')
 
     def decode_count(self, ascii):
         """This decodes an integer encoded by encode_counter"""
+        line = ascii.decode('utf-8')
         total = 0
-        for digit in ascii:
+        for digit in line:
             total *= self.BASE
             total += self.REVERSE[digit]
         return total
