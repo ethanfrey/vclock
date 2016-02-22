@@ -22,9 +22,10 @@ class ArrayCodec(object):
             big = big // self.BASE
         return result.encode('utf-8')
 
-    def decode_count(self, ascii):
+    def decode_count(self, line):
         """This decodes an integer encoded by encode_counter"""
-        line = ascii.decode('utf-8')
+        if hasattr(line, 'decode'):
+            line = line.decode('utf-8')
         total = 0
         for digit in line:
             total *= self.BASE
